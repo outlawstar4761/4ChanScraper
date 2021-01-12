@@ -25,7 +25,7 @@ let mod = (function(){
     });
   }
   function _getToFile(absolutePath,uri){
-    http.get(uri,(resp)=>{
+    https.get(uri,(resp)=>{
       resp.pipe(fs.createWriteStream(absolutePath));
     });
   }
