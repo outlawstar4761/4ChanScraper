@@ -75,7 +75,7 @@ let mod = (function(){
     // let fileName = targetDir + uri.split('/' + board + '/')[1];
     let fileName = targetDir + uri.split('/')[uri.split('/').length - 1]
     // console.log(fileName);
-    request.get(uri).pipe(fs.createWriteStream(fileName));
+    request.get(uri).pipe(fs.createWriteStream(fileName)).catch(console.error);
   }
   function _saveHtml(targetDir,uri){
     let fileName = targetDir + uri.split('/thread/')[1] + '.html';

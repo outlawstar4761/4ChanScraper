@@ -1,7 +1,4 @@
-const testModule = require('./testModule');
-
-
-const target = 'https://archive.4plebs.org';
+const chanScraper = require('./src/chanScraper');
 
 
 (async ()=>{
