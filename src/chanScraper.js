@@ -19,7 +19,7 @@ let mod = (function(){
         });
         resp.on('error',rej);
         resp.on('end',()=>{
-          resolve(data);
+          res(data);
         });
       });
     });
