@@ -20,6 +20,9 @@ let mod = (function(){
       });
     });
   }
+  function _unique(value, index, self){
+    return self.indexOf(value) === index;
+  }
   function _buildThreadPath(threadId){
     return outputDir + board + '/' + threadId + '/';
   }
@@ -69,24 +72,22 @@ let mod = (function(){
       return a.includes('http') ? a:'https:' + a;
     }).map((a)=>{
       return a.split('http').length > 2 ? 'http' + a.split('http')[2]:'http' + a.split('http')[1];
-    });
+    }).filter(_unique);
   }
   function _downloadFile(targetDir,uri){
-    // let fileName = targetDir + uri.split('/' + board + '/')[1];
     let fileName = targetDir + uri.split('/')[uri.split('/').length - 1]
     // console.log(fileName);
-    request.get(uri).pipe(fs.createWriteStream(fileName)).catch(console.error);
+    request.get(uri).on('error',console.error).pipe(fs.createWriteStream(fileName));
   }
   function _saveHtml(targetDir,uri){
     let fileName = targetDir + uri.split('/thread/')[1] + '.html';
-    request.get(uri).pipe(fs.createWriteStream(fileName)).catch(console.error);
+    request.get(uri).pipe(fs.createWriteStream(fileName));
   }
   function _parseMedia(threadDir,html){
     let anchors = _parseAnchors(html);
     for(let i in anchors){
       _downloadFile(threadDir,anchors[i]);
     }
-    // console.log(anchors);
   }
   function _parseTitle(html){
     let soup = new JSSoup(html);
