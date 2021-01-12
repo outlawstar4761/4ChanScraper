@@ -20,8 +20,26 @@ let mod = (function(){
       });
     });
   }
-  function _buildPath(threadId){
-    return outputDir + board + '/' + thread + '/';
+  function _buildThreadPath(threadId){
+    return outputDir + board + '/' + threadId + '/';
+  }
+  function _buildBoardPath(){
+    return outputDir + board;
+  }
+  function _prepDir(dir){
+    if (!fs.existsSync(dir)){
+      try{
+        fs.mkdirSync(dir);
+      }catch(e){
+        console.error(e);
+      }
+    }
+  }
+  function _buildPage(board,page){
+    if(pageNum === 0){
+      return targetDomain + '/' + board + '/';
+    }
+    return targetDomain + '/' + board + '/page/' + page;
   }
   function _getPages(board){
     let pages = [];
@@ -54,6 +72,11 @@ let mod = (function(){
   }
   function _downloadFile(targetDir,uri){
     let fileName = targetDir + uri.split('/' + board + '/')[1];
+    console.log(fileName);
+    request.get(uri).pipe(fs.createWriteStream(fileName));
+  }
+  function _saveHtml(targetDir,uri){
+    let fileName = targetDir + uri.split('/thread/')[1] + '.html';
     request.get(uri).pipe(fs.createWriteStream(fileName));
   }
   function _parseMedia(html){
@@ -70,24 +93,43 @@ let mod = (function(){
   }
   function _parsePosts(html){
     let soup = new JSSoup(html);
-    return soup.findAll('div','text');
-    // console.log(posts);
+    let posts = soup.findAll('div','text');
+    return posts.filter((p)=>{
+      return p.contents.length;
+    }).map((p)=>{
+      if(p.contents[p.contents.length - 1]._text === undefined){ //includes a link or something
+        console.log(p.contents);
+      }
+      return p.contents[p.contents.length - 1]._text; //plain text -- seems to work for most posts
+      //p.contents[p.contents.length - 1]._text   greentext?
+    });
   }
   function _parseText(html){
-    let title = _parseTitle(html);
-    let posts = _parsePosts(html);
-    posts.forEach((p)=>{console.log(p.contents[0]._text);});
-    // console.log(posts);
+    /*
+    Wanted some kind of structure.
+    for the sake of time, we'll save the whole html
+    */
+    //let title = _parseTitle(html);
+    //let posts = _parsePosts(html);
   }
   async function _crawlPage(uri){
     let html = await _get(uri);
     let threads = _parseThreads(html).map((threadId)=>{return targetDomain + '/' + board + '/thread/' + threadId});
-    threads.forEach(_crawlThread);
+    if(threads.length){
+      threads.forEach(_crawlThread);
+      return true;
+    }
+    return false;
   }
   async function _crawlThread(uri){
     let html = await _get(uri);
+    let threadId = uri.split('/thread/')[1];
+    let threadDir = _buildThreadPath(threadId);
+    _prepDir(threadDir);
+    console.log('Crawling Thread: ' + threadId);
+    _saveHtml(threadDir,uri);
     // _parseMedia(html);
-    _parseText(html);
+    // _parseText(html);
   }
   return {
     urlBase:targetDomain,
@@ -102,15 +144,19 @@ let mod = (function(){
     },
     crawl:async function(targetBoard){
       this.board(targetBoard);
-      //let pages = _getPages(board);
-      //pages.forEach(_crawlPage);
-      _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
-      /*
-      build pages.
-      get each page.
-      get each thread.
-      visit each thread on each page.
-      */
+      _prepDir(_buildBoardPath(targetBoard));
+      let paginating = true;
+      pageNum = 2
+      while(paginating){
+        let page = _buildPage(targetBoard,pageNum);
+        if(!await _crawlPage(page)){
+          console.log('No threads on page: ' + pageNum + '. Stopping.');
+          paginating = false;
+        }
+        page++;
+      }
+      // pages.forEach(_crawlPage);
+      // _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
     }
   }
 
