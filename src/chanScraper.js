@@ -3,7 +3,7 @@ let mod = (function(){
   const fs = require('fs');
   const host = 'https://archive.4plebs.org';
   const JSSoup = require('jssoup').default;
-  const config = require('./config');
+  const config = require('../config');
   const targetDomain = 'https://archive.4plebs.org';
   const mediaFormats = [".jpg", ".png", ".gif", ".webm"];
   const thread_link_length = 17; //might be unused. Grabbed from source
@@ -79,7 +79,7 @@ let mod = (function(){
   }
   function _saveHtml(targetDir,uri){
     let fileName = targetDir + uri.split('/thread/')[1] + '.html';
-    request.get(uri).pipe(fs.createWriteStream(fileName));
+    request.get(uri).pipe(fs.createWriteStream(fileName)).catch(console.error);
   }
   function _parseMedia(threadDir,html){
     let anchors = _parseAnchors(html);
@@ -150,17 +150,17 @@ let mod = (function(){
     crawl:async function(targetBoard){
       this.board(targetBoard);
       _prepDir(_buildBoardPath(targetBoard));
-      // let paginating = true;
-      // pageNum = 2
-      // while(paginating){
-      //   let page = _buildPage(targetBoard,pageNum);
-      //   if(!await _crawlPage(page)){
-      //     console.log('No threads on page: ' + pageNum + '. Stopping.');
-      //     paginating = false;
-      //   }
-      //   page++;
-      // }
-      _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
+      let paginating = true;
+      pageNum = 2
+      while(paginating){
+        let page = _buildPage(targetBoard,pageNum);
+        if(!await _crawlPage(page)){
+          console.log('No threads on page: ' + pageNum + '. Stopping.');
+          paginating = false;
+        }
+        page++;
+      }
+      // _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
       // pages.forEach(_crawlPage);
     }
   }
