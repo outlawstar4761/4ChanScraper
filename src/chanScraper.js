@@ -25,8 +25,15 @@ let mod = (function(){
     });
   }
   function _getToFile(absolutePath,uri){
+    let fileStream = fs.createWriteStream(absolutePath);
     https.get(uri,(resp)=>{
-      resp.pipe(fs.createWriteStream(absolutePath));
+      resp.pipe(fileStream);
+      fileStream.on('finish',()=>{
+        fileStream.close(()=>{});
+      })
+    }).on('error',(err)=>{
+      console.error(err);
+      fs.unlink(absolutePath);
     });
   }
   function _unique(value, index, self){
