@@ -1,6 +1,7 @@
 let mod = (function(){
-  const request = require('request');
+  // const request = require('request');
   const fs = require('fs');
+  const https = require('https');
   const host = 'https://archive.4plebs.org';
   const JSSoup = require('jssoup').default;
   const config = require('../config');
@@ -10,14 +11,22 @@ let mod = (function(){
   let board = 'pol';
   let outputDir = config.outputDir;
   function _get(uri){
-    return new Promise((resolve,reject)=>{
-      request(uri,(err,res,body)=>{
-        if(err){
-          reject(err);
-          return;
-        }
-        resolve(body);
+    return new Promise((res,rej)=>{
+      https.get(uri,(resp)=>{
+        let data = '';
+        resp.on('data',(chunk)=>{
+          data += chunk;
+        });
+        resp.on('error',rej);
+        resp.on('end',()=>{
+          resolve(data);
+        });
       });
+    });
+  }
+  function _getToFile(absolutePath,uri){
+    http.get(uri,(resp)=>{
+      resp.pipe(fs.createWriteStream(absolutePath));
     });
   }
   function _unique(value, index, self){
@@ -75,13 +84,12 @@ let mod = (function(){
     }).filter(_unique);
   }
   function _downloadFile(targetDir,uri){
-    let fileName = targetDir + uri.split('/')[uri.split('/').length - 1]
-    // console.log(fileName);
-    request.get(uri).on('error',console.error).pipe(fs.createWriteStream(fileName));
+    let fileName = targetDir + uri.split('/')[uri.split('/').length - 1];
+    _getToFile(fileName,uri);
   }
   function _saveHtml(targetDir,uri){
     let fileName = targetDir + uri.split('/thread/')[1] + '.html';
-    request.get(uri).pipe(fs.createWriteStream(fileName));
+    _getToFile(fileName,uri);
   }
   function _parseMedia(threadDir,html){
     let anchors = _parseAnchors(html);
@@ -151,17 +159,17 @@ let mod = (function(){
     crawl:async function(targetBoard){
       this.board(targetBoard);
       _prepDir(_buildBoardPath(targetBoard));
-      let paginating = true;
-      pageNum = 2
-      while(paginating){
-        let page = _buildPage(targetBoard,pageNum);
-        if(!await _crawlPage(page)){
-          console.log('No threads on page: ' + pageNum + '. Stopping.');
-          paginating = false;
-        }
-        page++;
-      }
-      // _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
+      // let paginating = true;
+      // pageNum = 2
+      // while(paginating){
+      //   let page = _buildPage(targetBoard,pageNum);
+      //   if(!await _crawlPage(page)){
+      //     console.log('No threads on page: ' + pageNum + '. Stopping.');
+      //     paginating = false;
+      //   }
+      //   page++;
+      // }
+      _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
       // pages.forEach(_crawlPage);
     }
   }
