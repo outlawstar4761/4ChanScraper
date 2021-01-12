@@ -10,6 +10,7 @@ let mod = (function(){
   const thread_link_length = 17; //might be unused. Grabbed from source
   let board = 'pol';
   let outputDir = config.outputDir;
+  let targetBoards = config.targetBoards;
   function _get(uri){
     return new Promise((res,rej)=>{
       https.get(uri,(resp)=>{
@@ -146,7 +147,10 @@ let mod = (function(){
     let html = await _get(uri);
     let threads = _parseThreads(html).map((threadId)=>{return targetDomain + '/' + board + '/thread/' + threadId});
     if(threads.length){
-      threads.forEach(await _crawlThread);
+      for(let i in threads){
+        await _crawlThread(threads[i]);
+      }
+      // threads.forEach(await _crawlThread);
       return true;
     }
     return false;
@@ -157,11 +161,18 @@ let mod = (function(){
     let threadDir = _buildThreadPath(threadId);
     _prepDir(threadDir);
     console.log('Crawling Thread: ' + threadId);
-    _saveHtml(threadDir,uri);
-    await _parseMedia(threadDir,html);
+    try{
+      await _saveHtml(threadDir,uri);
+      await _parseMedia(threadDir,html);
+    }catch(err){
+      console.error(err);
+      return false;
+    }
+    return true;
     // _parseText(html);
   }
   return {
+    targetBoards:targetBoards,
     urlBase:targetDomain,
     board:board,
     test:function(uri){
