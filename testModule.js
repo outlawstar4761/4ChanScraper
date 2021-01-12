@@ -68,10 +68,9 @@ let mod = (function(){
       return false;
     }).map((a)=>{
       return a.includes('http') ? a:'https:' + a;
+    }).map((a)=>{
+      return a.split('http').length > 2 ? 'http' + a.split('http')[2]:'http' + a.split('http')[1];
     });
-    // .map((a)=>{
-    //   return a.split('http') > 2 ? 'http' + a.split('http')[2]:'http' + a.split('http')[1];
-    // });
   }
   function _downloadFile(targetDir,uri){
     let fileName = targetDir + uri.split('/' + board + '/')[1];
