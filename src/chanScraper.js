@@ -25,15 +25,16 @@ let mod = (function(){
     });
   }
   function _getToFile(absolutePath,uri){
-    let fileStream = fs.createWriteStream(absolutePath);
-    https.get(uri,(resp)=>{
-      resp.pipe(fileStream);
-      fileStream.on('finish',()=>{
-        fileStream.close(()=>{});
-      })
-    }).on('error',(err)=>{
-      console.error(err);
-      fs.unlink(absolutePath);
+    return new Promise((res,rej)=>{
+      let fileStream = fs.createWriteStream(absolutePath);
+      https.get(uri,(resp)=>{
+        resp.pipe(fileStream);
+        fileStream.on('finish',()=>{
+          fileStream.close(()=>{
+            res();
+          })
+        });
+      }).on('error',rej).end();
     });
   }
   function _unique(value, index, self){
@@ -90,18 +91,26 @@ let mod = (function(){
       return a.split('http').length > 2 ? 'http' + a.split('http')[2]:'http' + a.split('http')[1];
     }).filter(_unique);
   }
-  function _downloadFile(targetDir,uri){
+  async function _downloadFile(targetDir,uri){
     let fileName = targetDir + uri.split('/')[uri.split('/').length - 1];
-    _getToFile(fileName,uri);
+    try{
+      await _getToFile(fileName,uri);
+    }catch(err){
+      console.log('Error Downloading: ' + uri);
+    }
   }
   function _saveHtml(targetDir,uri){
     let fileName = targetDir + uri.split('/thread/')[1] + '.html';
     _getToFile(fileName,uri);
   }
-  function _parseMedia(threadDir,html){
+  async function _parseMedia(threadDir,html){
     let anchors = _parseAnchors(html);
     for(let i in anchors){
-      _downloadFile(threadDir,anchors[i]);
+      try{
+        await _downloadFile(threadDir,anchors[i]);
+      }catch(err){
+        console.log('Error Downloading: ' + anchors[i]);
+      }
     }
   }
   function _parseTitle(html){
@@ -137,7 +146,7 @@ let mod = (function(){
     let html = await _get(uri);
     let threads = _parseThreads(html).map((threadId)=>{return targetDomain + '/' + board + '/thread/' + threadId});
     if(threads.length){
-      threads.forEach(_crawlThread);
+      threads.forEach(await _crawlThread);
       return true;
     }
     return false;
@@ -149,7 +158,7 @@ let mod = (function(){
     _prepDir(threadDir);
     console.log('Crawling Thread: ' + threadId);
     _saveHtml(threadDir,uri);
-    _parseMedia(threadDir,html);
+    await _parseMedia(threadDir,html);
     // _parseText(html);
   }
   return {
@@ -166,17 +175,17 @@ let mod = (function(){
     crawl:async function(targetBoard){
       this.board(targetBoard);
       _prepDir(_buildBoardPath(targetBoard));
-      // let paginating = true;
-      // pageNum = 2
-      // while(paginating){
-      //   let page = _buildPage(targetBoard,pageNum);
-      //   if(!await _crawlPage(page)){
-      //     console.log('No threads on page: ' + pageNum + '. Stopping.');
-      //     paginating = false;
-      //   }
-      //   page++;
-      // }
-      _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
+      let paginating = true;
+      pageNum = 2
+      while(paginating){
+        let page = _buildPage(targetBoard,pageNum);
+        if(!await _crawlPage(page)){
+          console.log('No threads on page: ' + pageNum + '. Stopping.');
+          paginating = false;
+        }
+        page++;
+      }
+      // _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
       // pages.forEach(_crawlPage);
     }
   }
