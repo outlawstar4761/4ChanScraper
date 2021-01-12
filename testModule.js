@@ -59,7 +59,6 @@ let mod = (function(){
     }).map((a)=>{
       return a.attrs['href'];
     }).filter((a)=>{
-      console.log(a);
       for(let i in mediaFormats){
         if(a.includes(mediaFormats[i])){
           return true;
@@ -73,8 +72,9 @@ let mod = (function(){
     });
   }
   function _downloadFile(targetDir,uri){
-    let fileName = targetDir + uri.split('/' + board + '/')[1];
-    console.log(fileName);
+    // let fileName = targetDir + uri.split('/' + board + '/')[1];
+    let fileName = targetDir + uri.split('/')[uri.split('/').length - 1]
+    // console.log(fileName);
     request.get(uri).pipe(fs.createWriteStream(fileName));
   }
   function _saveHtml(targetDir,uri){
@@ -83,10 +83,10 @@ let mod = (function(){
   }
   function _parseMedia(threadDir,html){
     let anchors = _parseAnchors(html);
-    // for(let i in anchors){
-    //   _downloadFile(threadDir,anchors[i]);
-    // }
-    console.log(anchors);
+    for(let i in anchors){
+      _downloadFile(threadDir,anchors[i]);
+    }
+    // console.log(anchors);
   }
   function _parseTitle(html){
     let soup = new JSSoup(html);
