@@ -178,13 +178,13 @@ let mod = (function(){
     test:function(uri){
       return _downloadFile('./data/',uri);
     },
-    board:function(targetBoard){
+    setBoard:function(targetBoard){
       this.board = targetBoard;
       board = this.board;
       return this.board;
     },
     crawl:async function(targetBoard){
-      this.board(targetBoard);
+      this.setBoard(targetBoard);
       _prepDir(_buildBoardPath(targetBoard));
       let paginating = true;
       pageNum = 2

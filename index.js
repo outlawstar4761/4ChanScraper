@@ -2,6 +2,7 @@ const chanScraper = require('./src/chanScraper');
 
 
 (async ()=>{
-  chanScraper.targetBoards.forEeach(chanScraper.crawl);
-  // chanScraper.crawl('pol');
+  for(let i in chanScraper.targetBoards){
+    chanScraper.crawl(chanScraper.targetBoards[i]);
+  }
 })();
