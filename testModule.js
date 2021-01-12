@@ -69,6 +69,9 @@ let mod = (function(){
     }).map((a)=>{
       return a.includes('http') ? a:'https:' + a;
     });
+    // .map((a)=>{
+    //   return a.split('http') > 2 ? 'http' + a.split('http')[2]:'http' + a.split('http')[1];
+    // });
   }
   function _downloadFile(targetDir,uri){
     let fileName = targetDir + uri.split('/' + board + '/')[1];
@@ -79,8 +82,11 @@ let mod = (function(){
     let fileName = targetDir + uri.split('/thread/')[1] + '.html';
     request.get(uri).pipe(fs.createWriteStream(fileName));
   }
-  function _parseMedia(html){
+  function _parseMedia(threadDir,html){
     let anchors = _parseAnchors(html);
+    // for(let i in anchors){
+    //   _downloadFile(threadDir,anchors[i]);
+    // }
     console.log(anchors);
   }
   function _parseTitle(html){
@@ -128,7 +134,7 @@ let mod = (function(){
     _prepDir(threadDir);
     console.log('Crawling Thread: ' + threadId);
     _saveHtml(threadDir,uri);
-    // _parseMedia(html);
+    _parseMedia(threadDir,html);
     // _parseText(html);
   }
   return {
@@ -145,18 +151,18 @@ let mod = (function(){
     crawl:async function(targetBoard){
       this.board(targetBoard);
       _prepDir(_buildBoardPath(targetBoard));
-      let paginating = true;
-      pageNum = 2
-      while(paginating){
-        let page = _buildPage(targetBoard,pageNum);
-        if(!await _crawlPage(page)){
-          console.log('No threads on page: ' + pageNum + '. Stopping.');
-          paginating = false;
-        }
-        page++;
-      }
+      // let paginating = true;
+      // pageNum = 2
+      // while(paginating){
+      //   let page = _buildPage(targetBoard,pageNum);
+      //   if(!await _crawlPage(page)){
+      //     console.log('No threads on page: ' + pageNum + '. Stopping.');
+      //     paginating = false;
+      //   }
+      //   page++;
+      // }
+      _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
       // pages.forEach(_crawlPage);
-      // _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
     }
   }
 
