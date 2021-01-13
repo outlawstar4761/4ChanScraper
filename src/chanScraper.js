@@ -103,7 +103,8 @@ let mod = (function(){
         console.error('Error Downloading: ' + uri + "\n" + err.message);
       }
     }else{
-      console.error('Duplicate Download caught: ' + fileName);
+      //removing notification until we know why so many duplicates are being created
+      //console.error('Duplicate Download caught: ' + fileName);
     }
   }
   function _saveHtml(targetDir,uri){
@@ -111,6 +112,10 @@ let mod = (function(){
     _getToFile(fileName,uri);
   }
   async function _parseMedia(threadDir,html){
+    /*
+    these are unique links, but apparently [in many cases]
+    they generate several copies of the same file.
+    */
     let anchors = _parseAnchors(html);
     for(let i in anchors){
       try{
