@@ -199,12 +199,13 @@ let mod = (function(){
       let paginating = true;
       pageNum = 2
       while(paginating){
+        console.log('\x1b[32m','Current page: ' + pageNum);
         let page = _buildPage(targetBoard,pageNum);
         if(!await _crawlPage(page)){
           console.log('No threads on page: ' + pageNum + '. Stopping.');
           paginating = false;
         }
-        page++;
+        pageNum++;
       }
       // _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
       // pages.forEach(_crawlPage);
