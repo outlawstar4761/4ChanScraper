@@ -100,7 +100,7 @@ let mod = (function(){
       try{
         await _getToFile(fileName,uri);
       }catch(err){
-        console.error('Error Downloading: ' + uri + "\n" + err.message);
+        console.error('\x1b[31m','Error Downloading: ' + uri + "\n" + err.message);
       }
     }else{
       //removing notification until we know why so many duplicates are being created
@@ -118,11 +118,7 @@ let mod = (function(){
     */
     let anchors = _parseAnchors(html);
     for(let i in anchors){
-      try{
-        await _downloadFile(threadDir,anchors[i]);
-      }catch(err){
-        console.log('Error Downloading: ' + anchors[i]);
-      }
+      await _downloadFile(threadDir,anchors[i]);
     }
   }
   function _parseTitle(html){
@@ -171,7 +167,7 @@ let mod = (function(){
     let threadId = uri.split('/thread/')[1];
     let threadDir = _buildThreadPath(threadId);
     if(_prepDir(threadDir)){
-      console.log('Crawling Thread: ' + threadId);
+      console.log('\x1b[32m','Crawling Thread: ' + threadId);
       try{
         await _saveHtml(threadDir,uri);
         await _parseMedia(threadDir,html);
@@ -180,7 +176,7 @@ let mod = (function(){
         return false;
       }
     }else{
-      console.error('Skipping duplicate thread: ' + threadId);
+      console.error('\x1b[33m','Skipping duplicate thread: ' + threadId);
     }
     return true;
     // _parseText(html);
