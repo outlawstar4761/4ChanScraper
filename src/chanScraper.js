@@ -54,7 +54,9 @@ let mod = (function(){
       }catch(e){
         console.error(e);
       }
+      return true;
     }
+    return false;
   }
   function _buildPage(board,page){
     if(pageNum === 0){
@@ -94,10 +96,14 @@ let mod = (function(){
   }
   async function _downloadFile(targetDir,uri){
     let fileName = targetDir + uri.split('/')[uri.split('/').length - 1];
-    try{
-      await _getToFile(fileName,uri);
-    }catch(err){
-      console.log('Error Downloading: ' + uri);
+    if(!fs.existsSync(fileName)){
+      try{
+        await _getToFile(fileName,uri);
+      }catch(err){
+        console.error('Error Downloading: ' + uri + "\n" + err.message);
+      }
+    }else{
+      console.error('Duplicate Download caught: ' + fileName);
     }
   }
   function _saveHtml(targetDir,uri){
@@ -159,14 +165,17 @@ let mod = (function(){
     let html = await _get(uri);
     let threadId = uri.split('/thread/')[1];
     let threadDir = _buildThreadPath(threadId);
-    _prepDir(threadDir);
-    console.log('Crawling Thread: ' + threadId);
-    try{
-      await _saveHtml(threadDir,uri);
-      await _parseMedia(threadDir,html);
-    }catch(err){
-      console.error(err);
-      return false;
+    if(_prepDir(threadDir)){
+      console.log('Crawling Thread: ' + threadId);
+      try{
+        await _saveHtml(threadDir,uri);
+        await _parseMedia(threadDir,html);
+      }catch(err){
+        console.error(err);
+        return false;
+      }
+    }else{
+      console.error('Skipping duplicate thread: ' + threadId);
     }
     return true;
     // _parseText(html);
@@ -205,18 +214,3 @@ let mod = (function(){
 }());
 
 module.exports = mod;
-
-/*
-getting posts:
-page: h2 class="post_title"
-div class="text"
-soup.findAll('div','text');
-//data-post == postId
-*/
-
-/*
-soup.findAll('h2', 'post_title')
-// [<div class="h1"></div>]
-*/
-//https://archive.4plebs.org/pol/thread/302045542/ NO TITLE
-//https://archive.4plebs.org/pol/thread/302085101 WITH TITLE
