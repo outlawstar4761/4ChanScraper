@@ -95,7 +95,7 @@ let mod = (function(){
     }).filter(_unique);
   }
   async function _downloadFile(targetDir,uri){
-    let fileName = targetDir + uri.split('/')[uri.split('/').length - 1];
+    let fileName = targetDir + uri.split('/')[uri.split('/').length - 1].replace(/[^-_.A-Za-z0-9]/g,'');
     if(!fs.existsSync(fileName)){
       try{
         await _getToFile(fileName,uri);
