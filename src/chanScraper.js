@@ -121,7 +121,7 @@ let mod = (function(){
     }
   }
   function _saveHtml(targetDir,uri){
-    let fileName = targetDir + uri.split('/' + res + '/')[1] + '.html';
+    let fileName = uri.split('/' + pathSeperator + '/')[1].includes('.html') ? uri.split('/' + pathSeperator + '/')[1]:uri.split('/' + pathSeperator + '/')[1] + '.html';
     _getToFile(fileName,uri);
   }
   async function _parseMedia(threadDir,html){
