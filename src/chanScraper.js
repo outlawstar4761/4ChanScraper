@@ -2,13 +2,12 @@ let mod = (function(){
   // const request = require('request');
   const fs = require('fs');
   const https = require('https');
-  const host = 'https://archive.4plebs.org';
   const JSSoup = require('jssoup').default;
   const config = require('../config');
-  const targetDomain = 'https://archive.4plebs.org';
   const mediaFormats = [".jpg", ".png", ".gif", ".webm"];
-  const thread_link_length = 17; //might be unused. Grabbed from source
-  let board = 'pol';
+  let targetDomain = config.availableDomains[0].host;
+  let board = config.availableDomains[0].targetBoards[0];
+  let pathSeperator = config.availableDomains[0].path_sep;
   let outputDir = config.outputDir;
   let targetBoards = config.targetBoards;
   function _get(uri){
@@ -59,21 +58,38 @@ let mod = (function(){
     return false;
   }
   function _buildPage(board,page){
+    switch(targetDomain){
+      case config.availableDomains[0].host:
+        return _buildChanPage(board,page);
+      case config.availableDomains[3].host:
+        return _buildKunPage(board,page);
+      default:
+        throw new Error('Unable to buildPage for Host: ' + targetDomain);
+    }
+  }
+  function _buildChanPage(board,page){
     if(pageNum === 0){
       return targetDomain + '/' + board + '/';
     }
     return targetDomain + '/' + board + '/page/' + page;
   }
-  function _getPages(board){
-    let pages = [];
-    for(let i = 0; i <= 15; i++){
-      pages.push(targetDomain + '/' + board + '/page/' + i);
+  function _buildKunPage(board,page){
+    if(pageNum === 0){
+      return targetDomain + '/' + board + '/index.html';
     }
-    return pages;
+    return targetDomain + '/' + board + '/' + page + '.html';
   }
   function _parseThreads(html){
     let soup = new JSSoup(html);
-    return threads = soup.findAll('article').filter((thread)=>{return thread.attrs['data-thread-num'] !== undefined}).map((thread)=>{return thread.attrs['data-thread-num']});
+    //switch config host to properly parse links.
+    switch(targetDomain){
+      case config.availableDomains[0].host:
+        return soup.findAll('article').filter((thread)=>{return thread.attrs['data-thread-num'] !== undefined}).map((thread)=>{return thread.attrs['data-thread-num']});
+      case config.availableDomains[3].host:
+        return soup.findAll('div','thread').filter((thread)=>{return thread.attrs['id'] !== undefined}).map((thread)=>{return thread.attrs['id'].split('_')[1]});
+      default:
+        throw new Error('Unable to parse Threads for Host: ' + targetDomain);
+    }
   }
   function _parseAnchors(html){
     let soup = new JSSoup(html);
@@ -102,57 +118,21 @@ let mod = (function(){
       }catch(err){
         console.error('\x1b[31m','Error Downloading: ' + uri + "\n" + err.message);
       }
-    }else{
-      //removing notification until we know why so many duplicates are being created
-      //console.error('Duplicate Download caught: ' + fileName);
     }
   }
   function _saveHtml(targetDir,uri){
-    let fileName = targetDir + uri.split('/thread/')[1] + '.html';
+    let fileName = targetDir + uri.split('/' + res + '/')[1] + '.html';
     _getToFile(fileName,uri);
   }
   async function _parseMedia(threadDir,html){
-    /*
-    these are unique links, but apparently [in many cases]
-    they generate several copies of the same file.
-    */
     let anchors = _parseAnchors(html);
     for(let i in anchors){
       await _downloadFile(threadDir,anchors[i]);
     }
   }
-  function _parseTitle(html){
-    let soup = new JSSoup(html);
-    let title = soup.find('h2', 'post_title').contents;
-    if(title.length){
-      return title[0]._text;
-    }
-    return '';
-  }
-  function _parsePosts(html){
-    let soup = new JSSoup(html);
-    let posts = soup.findAll('div','text');
-    return posts.filter((p)=>{
-      return p.contents.length;
-    }).map((p)=>{
-      if(p.contents[p.contents.length - 1]._text === undefined){ //includes a link or something
-        console.log(p.contents);
-      }
-      return p.contents[p.contents.length - 1]._text; //plain text -- seems to work for most posts
-      //p.contents[p.contents.length - 1]._text   greentext?
-    });
-  }
-  function _parseText(html){
-    /*
-    Wanted some kind of structure.
-    for the sake of time, we'll save the whole html
-    */
-    //let title = _parseTitle(html);
-    //let posts = _parsePosts(html);
-  }
   async function _crawlPage(uri){
     let html = await _get(uri);
-    let threads = _parseThreads(html).map((threadId)=>{return targetDomain + '/' + board + '/thread/' + threadId});
+    let threads = _parseThreads(html).map((threadId)=>{return targetDomain + '/' + board + '/' + pathSeperator + '/' + threadId});
     if(threads.length){
       for(let i in threads){
         await _crawlThread(threads[i]);
@@ -164,7 +144,7 @@ let mod = (function(){
   }
   async function _crawlThread(uri){
     let html = await _get(uri);
-    let threadId = uri.split('/thread/')[1];
+    let threadId = uri.split('/' + pathSeperator + '/')[1];
     let threadDir = _buildThreadPath(threadId);
     if(_prepDir(threadDir)){
       console.log('\x1b[32m','Crawling Thread: ' + threadId);
@@ -179,14 +159,20 @@ let mod = (function(){
       console.error('\x1b[33m','Skipping duplicate thread: ' + threadId);
     }
     return true;
-    // _parseText(html);
   }
   return {
+    config:config,
     targetBoards:targetBoards,
     urlBase:targetDomain,
     board:board,
     test:function(uri){
       return _downloadFile('./data/',uri);
+    },
+    setHost:function(availableDomain){
+      this.urlBase = availableDomain.host;
+      pathSeperator = availableDomain.path_sep;
+      targetDomain = this.urlBase;
+      return this.urlBase;
     },
     setBoard:function(targetBoard){
       this.board = targetBoard;
@@ -202,12 +188,13 @@ let mod = (function(){
         console.log('\x1b[32m','Current page: ' + pageNum);
         let page = _buildPage(targetBoard,pageNum);
         if(!await _crawlPage(page)){
-          console.log('No threads on page: ' + pageNum + '. Stopping.');
+          console.log('\x1b[31m','No threads on page: ' + pageNum + '. Stopping.');
           paginating = false;
         }
         pageNum++;
       }
-      // _crawlThread('https://archive.4plebs.org/pol/thread/302085101');
+      return true;
+      // _crawlThread('https://8kun.top/pnd/res/50808.html');
       // pages.forEach(_crawlPage);
     }
   }
@@ -216,3 +203,4 @@ let mod = (function(){
 }());
 
 module.exports = mod;
+//double htmls

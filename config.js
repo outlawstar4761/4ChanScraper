@@ -1,4 +1,29 @@
 module.exports = {
-  outputDir:'./data/',
-  targetBoards:['pol']
+  availableDomains:[
+    {
+      host:'https://archive.4plebs.org',
+      path_sep:'thread',
+      targetBoards:['pol'],
+      crawl:true
+    },
+    {
+      host:'https://boards.4chan.org',
+      path_sep:'',
+      targetBoards:['pol'],
+      crawl:false
+    },
+    {
+      host:'https://boards.4channel.org',
+      path_sep:'',
+      targetBoards:['g'],
+      crawl:false
+    }
+    {
+      host:'https://8kun.top',
+      path_sep:'res',
+      targetBoards:['pnd'],
+      crawl:false
+    }
+  ],
+  outputDir:'./data/'
 };
